@@ -26,13 +26,7 @@ class Evolver:
         self.time_sig = (4, 4)
 
     def eval_fitness(self):
-        self.avg_fitness = 0
-        for guy in self.pop:
-            f = fit.get_fitness(guy.piano_roll, Evolver.note2freq)
-            self.avg_fitness += f
-            guy.fitness = f
-
-        self.avg_fitness /= len(self.pop)
+        self.avg_fitness = sum(song.fitness for song in self.pop) / self.pop_size
         print('average population fitness:', self.avg_fitness)
 
     def init_pop(self):
@@ -42,15 +36,15 @@ class Evolver:
     def check_condition(self):
         print("in check_condition()")
         print("current generation is: " + str(self.curr_gen))
-        if self.curr_gen == self.max_gens:
+        if self.curr_gen >= self.max_gens:
             self.stop = True
             print('stopping because max generations has been reached')
         else:
-            for guy in self.pop:
-                if guy.fitness <= self.target_fitness:
+            for song in self.pop:
+                if song.fitness <= self.target_fitness:
                     print('stopping because fit enough individual was found')
                     self.stop = True
-                    self.best = guy
+                    self.best = song
                     break
 
     def next_gen(self):
@@ -58,7 +52,7 @@ class Evolver:
         self.new_pop = []
         for _ in self.pop:
             parents = self.select_parents()
-            self.new_pop.append(Individual(parents, self.piano_roll_length))
+            self.new_pop.append(Song(self.tempo, self.time_sig, self.num_bars, parents))
         self.pop = self.new_pop
         self.curr_gen += 1
 
@@ -78,12 +72,12 @@ class Evolver:
 
     def evolve(self):
         self.init_pop()
-        # self.eval_fitness()
-        # self.check_condition()
-        # while not self.stop:
-        #     self.next_gen()
-        #     self.eval_fitness()
-        #     self.check_condition()
+        self.eval_fitness()
+        self.check_condition()
+        while not self.stop:
+            self.next_gen()
+            self.eval_fitness()
+            self.check_condition()
         # self.output_results()
 
 
