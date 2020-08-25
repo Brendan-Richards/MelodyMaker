@@ -1,6 +1,6 @@
-from Individual import Individual
+#from Individual import Individual
 import SongFitness as fit
-import MidiParse
+#import MidiParse
 from Song import Song
 import random as rand
 
@@ -8,7 +8,7 @@ class Evolver:
     def __init__(self):
 
         # genetic algorithm parameters
-        self.pop_size = 100
+        self.pop_size = 10
         self.curr_gen = 1
         self.max_gens = 200
         self.stop = False
@@ -21,10 +21,9 @@ class Evolver:
         self.new_pop = []
 
         # song parameters
-        self.__num_bars = 5
-        self.__tempo = 120
-        self.__time_sig = (4, 4)
-        note2freq = fit.get_freqs()
+        self.num_bars = 5
+        self.tempo = 120
+        self.time_sig = (4, 4)
 
     def eval_fitness(self):
         self.avg_fitness = 0
@@ -79,13 +78,13 @@ class Evolver:
 
     def evolve(self):
         self.init_pop()
-        self.eval_fitness()
-        self.check_condition()
-        while not self.stop:
-            self.next_gen()
-            self.eval_fitness()
-            self.check_condition()
-        self.output_results()
+        # self.eval_fitness()
+        # self.check_condition()
+        # while not self.stop:
+        #     self.next_gen()
+        #     self.eval_fitness()
+        #     self.check_condition()
+        # self.output_results()
 
 
 def main():
