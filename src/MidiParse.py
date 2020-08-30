@@ -1,78 +1,41 @@
-import sys
-import os
-import numpy as np
-from pypianoroll import Multitrack, Track
-import pypianoroll
+from mido import Message, MidiFile, MidiTrack, MetaMessage
 
-class MidiParser:
+def save(parts, output_filename):
 
-    def parse_files(self, directory, track_type):
-        data_x = []
-        data_y = []
-        total = 0
-        bytes = 0
-        for file in os.listdir(directory):
+    mid = MidiFile(type=1)
 
-            print(directory + '/' + file)
-            try:
-                piano_roll = self.parse_file(directory + '/' + file, track_type)
-            except:
-                print('couldn\'t parse file for some reason. skipping')
-                continue
-            if piano_roll is None:
-                continue
-            temp_x, temp_y = self.get_training_data_multi(piano_roll)
-            total += len(temp_x)
-            bytes += temp_x.nbytes
-            # print('temp_x shape:', temp_x.shape)
-            # print('temp_y shape:', temp_y.shape)
-            if len(data_x) == 0 and len(data_y) == 0:
-                data_x.append(temp_x)
-                data_y.append(temp_y)
-            else:
-                data_x.append(temp_x)
-                data_y.append(temp_y)
-                # data_x = np.concatenate([data_x, temp_x], axis=0)
-                # data_y = np.concatenate([data_y, temp_y], axis=0)
-            print('num examples:', total)
-            print('size:', (bytes/1073741824), 'Gigabytes')
-            #print('data shape:', data_x.shape)
-        print('concatenating: ')
-        return np.concatenate(data_x, axis=0), np.concatenate(data_y, axis=0)
+    melody_velocity = 64
+    chord_velocity = 64
+    melody_channel = 0
+    chord_channel = 1
 
-    def parse_file(self, filename, track_type):
-        return self.midi2piano_roll(filename, track_type)
+    # melody track
+    track1 = MidiTrack()
+    track1.append(Message('program_change', channel=melody_channel, program=25, time=0))
+    for bar in parts[1].bars:
+        for note in bar:
+            track1.append(Message('note_on', channel=melody_channel, note=note.note_num, velocity=melody_velocity, time=0))
+            duration_ticks = int(note.num_beats*mid.ticks_per_beat)
+            track1.append(Message('note_off', channel=melody_channel, note=note.note_num, velocity=melody_velocity, time=duration_ticks))
 
-    def midi2piano_roll(self, filename, track_type):
+    # chord track
+    track2 = MidiTrack()
+    track2.append(Message('program_change', channel=chord_channel, program=1, time=0))
 
-        program_range = None
-        if track_type=='piano':
-            program_range = (0, 8)
-        elif track_type=='guitar':
-            program_range = (25, 32)
-        elif track_type=='bass':
-            program_range = (33, 40)
+    for bar in parts[0].bars:
+        for chord in bar:
+            for note in chord.notes:
+                track2.append(Message('note_on', channel=chord_channel, note=note, velocity=chord_velocity, time=0))
+            duration_ticks = int(chord.num_beats*mid.ticks_per_beat)
+            # track2.append(Message('note_off', note=chord.notes[0], velocity=chord_velocity, time=duration_ticks))
+            # for i in range(1, len(chord.notes)):
+            #     track2.append(Message('note_off', note=chord.notes[i], velocity=chord_velocity, time=0))
+            track2.append(Message('note_off', channel=chord_channel, note=chord.notes[0], velocity=0, time=duration_ticks))
+            for i in range(1, len(chord.notes)):
+                track2.append(Message('note_off', channel=chord_channel, note=chord.notes[i], velocity=0, time=0))
 
-        midi = Multitrack(filename)
+    mid.tracks.append(track1)
+    mid.tracks.append(track2)
 
-        for track in midi.tracks:
-            if program_range[0] <= track.program <= program_range[1]:
-                return track.pianoroll
-
-        print('couldn\'t find {} track in midi file {}'.format(track_type, filename))
-        return None
-
-
-def save_piano_roll(piano_roll, filename):
-    track = Track(pianoroll=piano_roll)
-    multi = Multitrack(tracks=[track])
-    multi.binarize(0.1)
-    pypianoroll.write(multi, '../generated_songs/' + filename)
-
-    #fig, ax = track.plot()
-    #plt.show()
-
-def main():
-    filename = 'C:\Users\Brendan\Dropbox\python 2020\MelodyMaker\simple_midi_songs\DOS.mid'
-    midi = Multitrack(filename)
+    mid.save(output_filename + '.mid')
 

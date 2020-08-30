@@ -1,8 +1,9 @@
 from Part import Part
 from Note import Note
 import random as rand
-import SongFitness as fit
+#import SongFitness as fit
 from Chord import Chord
+import copy
 
 class Song:
 
@@ -11,15 +12,21 @@ class Song:
         self.fitness = None
         self.time_sig = time_sig # time_sig[0] is the numerator
         self.num_bars = num_bars
-        self.note_types = ["whole", "half", "quarter", "eighth"] # "sixteenth", "thirty-second"]
+        self.note_types = ["whole", "half", "quarter", "eighth", "sixteenth"]#, "thirty-second"]
+        #self.note_types = ['quarter', 'eighth']
         self.parts = [Part("piano"), Part("guitar")]
         self.chordID = 0 # the next chord to make when creating a song
         self.mutation_prob = 0.05
-        self.num_mutations = 3
-        self.chords = ["Cmaj", "Amin", "Gmaj"]
-        self.times = ["half", "half", "whole"]
+        self.num_mutations = 1
+        self.chords = ["Dmaj", "Amaj", "Bmin", "Gmaj"]
         self.chord2notes = self.get_chord2notes()
-        self.note2freq = fit.get_freqs()
+        self.all_chord_notes = self.get_chord_notes()
+        self.times = ["whole", "whole", "whole", "whole"]
+        self.flow = None
+        self.variety = None
+        self.relevance = None
+        self.num_notes = None
+        #self.note2freq = fit.get_freqs()
 
         if not parents:
             self.random_song()
@@ -31,12 +38,49 @@ class Song:
             exit(-1)
         self.calc_fitness()
 
+    def get_chord_notes(self):
+        base_notes = set([note for sublist in self.chord2notes.values() for note in sublist])
+
+        all_notes = set()
+        for note in base_notes:
+            all_notes.add(note+12)
+            # ctr = note - 12
+            # while ctr > 0:
+            #     all_notes.add(ctr)
+            #     ctr -= 12
+            # ctr = note + 12
+            # while ctr < 127:
+            #     all_notes.add(ctr)
+            #     ctr += 12
+
+        return all_notes
+
     def get_chord2notes(self):
         chord2notes = dict()
-        chord2notes["Cmaj"] = [48, 52, 55]
-        chord2notes["Amin"] = [45, 48, 52]
-        chord2notes["Gmaj"] = [43, 47, 50]
+
+        # major chords
+
+        # chord2notes["A#maj"] = [48, 52, 55]
+        # chord2notes["Bbmaj"] = [48, 52, 55]
+        # chord2notes["Bmaj"] = [48, 52, 55]
+        # chord2notes["Cmaj"] = [48, 52, 55]
+        # chord2notes["Bbmaj"] = [48, 52, 55]
+
+        chord2notes["Amaj"] = self.maj_chord(57)
+        chord2notes["Cmaj"] = self.maj_chord(48)
+        chord2notes["Gmaj"] = self.maj_chord(43)
+        chord2notes["Dmaj"] = self.maj_chord(62)
+
+        # minor chords
+        chord2notes["Amin"] = self.min_chord(45)
+        chord2notes["Bmin"] = self.min_chord(59)
         return chord2notes
+
+    def maj_chord(self, root):
+        return [root, root+4, root+7]
+
+    def min_chord(self, root):
+        return [root, root+3, root+7]
 
     def random_song(self):
         for i in range(self.num_bars):
@@ -83,22 +127,90 @@ class Song:
 
 
     def crossover(self, p1, p2):
-        self.parts = p1.parts[:]
-        crosspoint = rand.randint(0, len(p1.parts[0].bars)-1)
-        self.parts[1].bars[crosspoint:] = p2.parts[1].bars[crosspoint:]
-
-    def calc_fitness(self):
-        self.fitness = 1
+        # self.parts = p1.parts[:]
+        # crosspoint = rand.randint(0, len(p1.parts[0].bars)-1)
+        # #crosspoint = int(len(p1.parts[0].bars)/2)
+        # self.parts[1].bars[crosspoint:] = p2.parts[1].bars[crosspoint:]
+        self.parts = copy.deepcopy(p1.parts)
+        crosspoint = rand.randint(0, len(p1.parts[0].bars) - 1)
+        self.parts[1].bars[crosspoint:] = copy.deepcopy(p2.parts[1].bars[crosspoint:])
 
     def mutate(self):
         if rand.random() < self.mutation_prob:
             for _ in range(self.num_mutations):
                 bar_index = rand.randint(0, len(self.parts[1].bars)-1)
                 note_index = rand.randint(0, len(self.parts[1].bars[bar_index])-1)
-                #note_type = self.parts[1].bars[bar_index][note_index].note_type
                 note_num = rand.randint(*self.parts[1].note_range)
-                #note = Note(1.0, note_num, note_type, self.time_sig)
                 self.parts[1].bars[bar_index][note_index].note_num = note_num
+
+    def calc_fitness(self):
+
+        num_notes_weight = 40
+        flow_weight = 1
+        rel_weight = 40
+        var_weight = 30
+
+        self.flow = self.get_flow() * flow_weight
+        self.relevance = self.get_relevance() * rel_weight
+        self.variety = self.get_variety() * var_weight
+        self.num_notes = self.get_num_notes() * num_notes_weight
+
+        #print("\nflow: ", flow, "\nrelevance: ", relevance, "\nvariety: ", variety)
+
+        self.fitness = self.flow + self.relevance + self.variety + self.num_notes
+        #self.fitness = rel_weight*relevance + flow_weight*flow
+        #print("fitness: ", self.fitness)
+        #self.fitness = self.count_60s()
+
+    def get_num_notes(self):
+        count = 0
+        for bar in self.parts[1].bars:
+            for note in bar:
+                count += 1
+        return (1/count)*100
+
+    def count_60s(self):
+        count = 0
+        for bar in self.parts[1].bars:
+            for note in bar:
+                if note.note_num == 60:
+                    count += 1
+        return (count*100)
+
+    def get_flow(self):
+        total = 0
+
+        prev = None
+        for bar in self.parts[1].bars:
+            for note in bar:
+                if prev:
+                    total += abs(note.note_num - prev.note_num)
+                else:
+                    prev = note
+
+        return total
+
+    def get_relevance(self):
+        num_bad_notes = 0
+
+        for bar in self.parts[1].bars:
+            for note in bar:
+                if not note.note_num in self.all_chord_notes:
+                    num_bad_notes += 1
+
+        return num_bad_notes
+
+    def get_variety(self):
+        notes = set()
+
+        for bar in self.parts[1].bars:
+            for note in bar:
+                notes.add(note.note_num)
+
+        return (1.0/len(notes))*100
+
+
+
 
 
     def play(self):
