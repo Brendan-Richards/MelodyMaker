@@ -5,14 +5,15 @@ from Song import Song
 import random as rand
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 class Evolver:
     def __init__(self):
 
         # genetic algorithm parameters
-        self.pop_size = 500
+        self.pop_size = 300
         self.curr_gen = 1
-        self.max_gens = 100
+        self.max_gens = 300
         self.stop = False
         self.tourney_size = 5
         self.avg_fitness = 100000
@@ -30,7 +31,7 @@ class Evolver:
         self.num_notes = []
 
         # song parameters
-        self.num_bars = 10
+        self.num_bars = 5
         self.tempo = 120
         self.time_sig = (4, 4)
 
@@ -99,7 +100,7 @@ class Evolver:
         plt.legend()
         plt.show()
 
-        output_filename = 'solution_song'
+        output_filename = str(time.localtime().__str__())
         save(self.best.parts, output_filename)
 
     def evolve(self):

@@ -12,8 +12,8 @@ class Song:
         self.fitness = None
         self.time_sig = time_sig # time_sig[0] is the numerator
         self.num_bars = num_bars
-        self.note_types = ["whole", "half", "quarter", "eighth", "sixteenth"]#, "thirty-second"]
-        #self.note_types = ['quarter', 'eighth']
+        #self.note_types = ["whole", "half", "quarter", "eighth", "sixteenth"]#, "thirty-second"]
+        self.note_types = ['quarter', 'eighth', 'half']
         self.parts = [Part("piano"), Part("guitar")]
         self.chordID = 0 # the next chord to make when creating a song
         self.mutation_prob = 0.05
@@ -21,7 +21,7 @@ class Song:
         self.chords = ["Dmaj", "Amaj", "Bmin", "Gmaj"]
         self.chord2notes = self.get_chord2notes()
         self.all_chord_notes = self.get_chord_notes()
-        self.times = ["whole", "whole", "whole", "whole"]
+        self.times = ["half", "half", "half", "half"]
         self.flow = None
         self.variety = None
         self.relevance = None
@@ -39,6 +39,7 @@ class Song:
         self.calc_fitness()
 
     def get_chord_notes(self):
+        # base notes are all the notes that make up the chord progression
         base_notes = set([note for sublist in self.chord2notes.values() for note in sublist])
 
         all_notes = set()
@@ -59,21 +60,42 @@ class Song:
         chord2notes = dict()
 
         # major chords
-
-        # chord2notes["A#maj"] = [48, 52, 55]
-        # chord2notes["Bbmaj"] = [48, 52, 55]
-        # chord2notes["Bmaj"] = [48, 52, 55]
-        # chord2notes["Cmaj"] = [48, 52, 55]
-        # chord2notes["Bbmaj"] = [48, 52, 55]
-
         chord2notes["Amaj"] = self.maj_chord(57)
-        chord2notes["Cmaj"] = self.maj_chord(48)
-        chord2notes["Gmaj"] = self.maj_chord(43)
+        chord2notes["A#maj"] = self.maj_chord(58)
+        chord2notes["Bbmaj"] = self.maj_chord(58)
+        chord2notes["Bmaj"] = self.maj_chord(59)
+        chord2notes["Cmaj"] = self.maj_chord(60)
+        chord2notes["C#maj"] = self.maj_chord(61)
+        chord2notes["Dbmaj"] = self.maj_chord(61)
         chord2notes["Dmaj"] = self.maj_chord(62)
+        chord2notes["D#maj"] = self.maj_chord(63)
+        chord2notes["Ebmaj"] = self.maj_chord(63)
+        chord2notes["Emaj"] = self.maj_chord(64)
+        chord2notes["Fmaj"] = self.maj_chord(65)
+        chord2notes["F#maj"] = self.maj_chord(66)
+        chord2notes["Gbmaj"] = self.maj_chord(66)
+        chord2notes["Gmaj"] = self.maj_chord(67)
+        chord2notes["G#maj"] = self.maj_chord(68)
+        chord2notes["Abmaj"] = self.maj_chord(68)
 
-        # minor chords
-        chord2notes["Amin"] = self.min_chord(45)
+        chord2notes["Amin"] = self.min_chord(57)
+        chord2notes["A#min"] = self.min_chord(58)
+        chord2notes["Bbmin"] = self.min_chord(58)
         chord2notes["Bmin"] = self.min_chord(59)
+        chord2notes["Cmin"] = self.min_chord(60)
+        chord2notes["C#min"] = self.min_chord(61)
+        chord2notes["Dbmin"] = self.min_chord(61)
+        chord2notes["Dmin"] = self.min_chord(62)
+        chord2notes["D#min"] = self.min_chord(63)
+        chord2notes["Ebmin"] = self.min_chord(63)
+        chord2notes["Emin"] = self.min_chord(64)
+        chord2notes["Fmin"] = self.min_chord(65)
+        chord2notes["F#min"] = self.min_chord(66)
+        chord2notes["Gbmin"] = self.min_chord(66)
+        chord2notes["Gmin"] = self.min_chord(67)
+        chord2notes["G#min"] = self.min_chord(68)
+        chord2notes["Abmin"] = self.min_chord(68)
+
         return chord2notes
 
     def maj_chord(self, root):
@@ -127,10 +149,6 @@ class Song:
 
 
     def crossover(self, p1, p2):
-        # self.parts = p1.parts[:]
-        # crosspoint = rand.randint(0, len(p1.parts[0].bars)-1)
-        # #crosspoint = int(len(p1.parts[0].bars)/2)
-        # self.parts[1].bars[crosspoint:] = p2.parts[1].bars[crosspoint:]
         self.parts = copy.deepcopy(p1.parts)
         crosspoint = rand.randint(0, len(p1.parts[0].bars) - 1)
         self.parts[1].bars[crosspoint:] = copy.deepcopy(p2.parts[1].bars[crosspoint:])
@@ -145,10 +163,10 @@ class Song:
 
     def calc_fitness(self):
 
-        num_notes_weight = 40
+        num_notes_weight = 30
         flow_weight = 1
-        rel_weight = 40
-        var_weight = 30
+        rel_weight = 200
+        var_weight = 50
 
         self.flow = self.get_flow() * flow_weight
         self.relevance = self.get_relevance() * rel_weight
@@ -212,9 +230,3 @@ class Song:
 
 
 
-
-    def play(self):
-        None
-
-    def save(self):
-        None

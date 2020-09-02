@@ -37,5 +37,5 @@ def save(parts, output_filename):
     mid.tracks.append(track1)
     mid.tracks.append(track2)
 
-    mid.save(output_filename + '.mid')
+    mid.save('../generated_songs/' + output_filename + '.mid')
 
