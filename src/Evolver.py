@@ -13,7 +13,7 @@ class Evolver:
         # genetic algorithm parameters
         self.pop_size = 300
         self.curr_gen = 1
-        self.max_gens = 300
+        self.max_gens = 1
         self.stop = False
         self.tourney_size = 5
         self.avg_fitness = 100000
@@ -38,10 +38,6 @@ class Evolver:
     def eval_fitness(self):
         self.avg_fitness = sum(song.fitness for song in self.pop) / self.pop_size
         self.fitness_data.append(self.avg_fitness)
-        self.flow_data.append(sum(song.flow for song in self.pop) / self.pop_size)
-        self.variety_data.append(sum(song.variety for song in self.pop) / self.pop_size)
-        self.relevance_data.append(sum(song.relevance for song in self.pop) / self.pop_size)
-        self.num_notes.append(sum(song.num_notes for song in self.pop) / self.pop_size)
         print('average population fitness:', self.avg_fitness)
 
     def init_pop(self):
@@ -91,11 +87,7 @@ class Evolver:
         print("in output_results()")
 
         x = np.linspace(1, self.curr_gen, num=self.curr_gen, dtype=int)
-        #plt.plot(x, self.fitness_data, label='Average Fitness')
-        plt.plot(x, self.flow_data, label='Average Flow')
-        plt.plot(x, self.relevance_data, label='Average Relevance')
-        plt.plot(x, self.variety_data, label='Average Variety')
-        plt.plot(x, self.num_notes, label='Average number of notes')
+        plt.plot(x, self.fitness_data, label='Average Fitness')
         plt.xlabel('Generation')
         plt.legend()
         plt.show()
